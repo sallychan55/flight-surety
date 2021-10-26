@@ -40,7 +40,6 @@ contract FlightSuretyApp {
         address airline;
     }
     mapping(string => Flight) private flights;
-    uint256 numOfRegisteredAlirlines;
 
  
     /********************************************************************************************/
@@ -87,8 +86,7 @@ contract FlightSuretyApp {
                                 public 
     {
         contractOwner = msg.sender;
-        flightSuretyData = FlightSuretyData(dataContract);
-        numOfRegisteredAlirlines = 1;  
+        flightSuretyData = FlightSuretyData(dataContract);  
     }
 
     /********************************************************************************************/
@@ -122,7 +120,7 @@ contract FlightSuretyApp {
     {
         require(flightSuretyData.isRegistered(airline) == false, "This airline is already registered.");
 
-        if(numOfRegisteredAlirlines < 4) //Multi-party Consensus does not apply yet
+        if(flightSuretyData.RegisteredAirlinesCount() < 4) //Multi-party Consensus does not apply yet
         {
             flightSuretyData.registerAirline(airline);
             success = true;
@@ -154,7 +152,7 @@ contract FlightSuretyApp {
                 multiCallsReg = new address[](0);      //Reset list of voters
                 success = true;
                 //Update M to be 50% of registered airlines
-                M = numOfRegisteredAlirlines;
+                M = flightSuretyData.RegisteredAirlinesCount();
                 M = M.div(2);
             }
         }
@@ -174,10 +172,9 @@ contract FlightSuretyApp {
                                 external
                                 requireIsOperational()
     {
-        require(!flights[flight].isRegistered, 'This flight is already registered');
-        flights[flight].isRegistered = true;
-        flights[flight].statusCode = STATUS_CODE_UNKNOWN;
-        numOfRegisteredAlirlines++;
+        require(!flights[Flight].isRegistered, 'This flight is already registered');
+        flights[Flight].isRegistered = true;
+        flights[Flight].statusCode = STATUS_CODE_UNKNOWN;
     }
     
    /**
@@ -195,8 +192,8 @@ contract FlightSuretyApp {
                                 view
                                 requireIsOperational()
     {
-        flights[flight].statusCode = statusCode;
-        flights[flight].updatedTimestamp = timestamp;        
+        flights[theFlight].statusCode = statusCode;
+        flights[theFlight].updatedTimestamp = timestamp;        
     }
 
 
@@ -252,13 +249,7 @@ contract FlightSuretyApp {
         require(flights[flight].statusCode != STATUS_CODE_UNKNOWN, 'Flight status unknown, submit request to fetch it from oracles');
         require(flights[flight].statusCode == STATUS_CODE_LATE_AIRLINE, 'Flight status does not imply insurance refunding');
 
-        string memory _flight = flight;
-        bytes32 flight_byte;
-        assembly {
-            flight_byte := mload(add(_flight, 32)) //convert flight name from string to bytes32
-        }
-
-        flightSuretyData.creditInsurees(flight_byte, msg.sender);
+        flightSuretyData.creditInsurees(flight, msg.sender);
 }
 
     function getCredit
@@ -454,22 +445,3 @@ contract FlightSuretyApp {
 // endregion
 
 }   
-
-
-contract FlightSuretyData{
-    function isOperational() public view returns(bool);
-    //function setOperatingStatus(bool mode) external;
-    function isRegistered(address airline) external view returns(bool);
-    function canVote(address airline) external view returns(bool);
-    //function RegisteredAirlinesCount() external view returns(uint);
-    function registerAirline(address airline) external;
-    //function enableVoting() external payable;
-    function buy(address customer, bytes32 flight, uint amount) external payable;
-    //function viewInsuredFlights(address customer) external returns(bytes32[] memory insuredFlights);
-    function creditInsurees(bytes32, address) external view returns(uint credit);
-    function getCredit(address)external view returns(uint credit);
-    function pay(address) public;
-    function fund(address, bytes32) public payable;
-    function getFlightKey(address airline, string memory flight, uint256 timestamp) internal pure returns(bytes32);
-    function() external payable;
-}

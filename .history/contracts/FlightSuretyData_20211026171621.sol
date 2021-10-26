@@ -94,20 +94,6 @@ contract FlightSuretyData {
         return operational;
     }
 
-    function isAirline
-                    (
-                        address airline        
-                    ) 
-                            public 
-                            view 
-                            returns(bool) 
-    {
-        if(airlines[airline].isRegistered && airlines[airline].isFunded)
-            return true;
-
-        return false;
-    }
-
 
     /**
     * @dev Sets contract operations on/off

@@ -11,7 +11,6 @@ import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 /************************************************** */
 contract FlightSuretyApp {
     using SafeMath for uint256; // Allow SafeMath functions to be called for all uint256 types (similar to "prototype" in Javascript)
-    FlightSuretyData flightSuretyData; 
 
     /********************************************************************************************/
     /*                                       DATA VARIABLES                                     */
@@ -39,8 +38,7 @@ contract FlightSuretyApp {
         uint256 updatedTimestamp;        
         address airline;
     }
-    mapping(string => Flight) private flights;
-    uint256 numOfRegisteredAlirlines;
+    mapping(bytes32 => Flight) private flights;
 
  
     /********************************************************************************************/
@@ -87,8 +85,7 @@ contract FlightSuretyApp {
                                 public 
     {
         contractOwner = msg.sender;
-        flightSuretyData = FlightSuretyData(dataContract);
-        numOfRegisteredAlirlines = 1;  
+        flightSuretyData = FlightSuretyData(dataContract);  
     }
 
     /********************************************************************************************/
@@ -122,7 +119,7 @@ contract FlightSuretyApp {
     {
         require(flightSuretyData.isRegistered(airline) == false, "This airline is already registered.");
 
-        if(numOfRegisteredAlirlines < 4) //Multi-party Consensus does not apply yet
+        if(flightSuretyData.RegisteredAirlinesCount() < 4) //Multi-party Consensus does not apply yet
         {
             flightSuretyData.registerAirline(airline);
             success = true;
@@ -154,7 +151,7 @@ contract FlightSuretyApp {
                 multiCallsReg = new address[](0);      //Reset list of voters
                 success = true;
                 //Update M to be 50% of registered airlines
-                M = numOfRegisteredAlirlines;
+                M = flightSuretyData.RegisteredAirlinesCount();
                 M = M.div(2);
             }
         }
@@ -169,15 +166,11 @@ contract FlightSuretyApp {
     */  
     function registerFlight
                                 (
-                                    string flight
                                 )
                                 external
-                                requireIsOperational()
+                                pure
     {
-        require(!flights[flight].isRegistered, 'This flight is already registered');
-        flights[flight].isRegistered = true;
-        flights[flight].statusCode = STATUS_CODE_UNKNOWN;
-        numOfRegisteredAlirlines++;
+
     }
     
    /**
@@ -192,11 +185,8 @@ contract FlightSuretyApp {
                                     uint8 statusCode
                                 )
                                 internal
-                                view
-                                requireIsOperational()
+                                pure
     {
-        flights[flight].statusCode = statusCode;
-        flights[flight].updatedTimestamp = timestamp;        
     }
 
 
@@ -220,66 +210,6 @@ contract FlightSuretyApp {
 
         emit OracleRequest(index, airline, flight, timestamp);
     } 
-
-    /**
-    * @dev Allow a user to buy insurance
-    *
-    */
-    function buyInsurance
-                            (
-                                string flight
-                            )
-                            external
-                            payable
-                            requireIsOperational()
-    {
-        require(flights[flight].isRegistered, 'This flight is not registered for insurance');
-        require(msg.value <= 1 ether && msg.value > 0, 'You must pay an insurance amount up to 1 ether.');
-
-        //flightSuretyData.fund.value(msg.value)(msg.sender, flight);
-    }
-
-    event  payout(uint amount, address insuree);
-
-    function claimInsurance
-                            (
-                                string flight
-                            )
-                            external
-    {
-        require(flights[flight].isRegistered, 'This flight is not registered for insurance');
-
-        require(flights[flight].statusCode != STATUS_CODE_UNKNOWN, 'Flight status unknown, submit request to fetch it from oracles');
-        require(flights[flight].statusCode == STATUS_CODE_LATE_AIRLINE, 'Flight status does not imply insurance refunding');
-
-        string memory _flight = flight;
-        bytes32 flight_byte;
-        assembly {
-            flight_byte := mload(add(_flight, 32)) //convert flight name from string to bytes32
-        }
-
-        flightSuretyData.creditInsurees(flight_byte, msg.sender);
-}
-
-    function getCredit
-                        (
-
-                        )
-                        external
-                        view
-                        returns(uint credit)
-    {
-        credit = flightSuretyData.getCredit(msg.sender);
-    }
-
-    function withdrawCredit
-                            (
-                            )
-                            public
-                            payable
-    {
-        flightSuretyData.pay(msg.sender);
-    }
 
 
 // region ORACLE MANAGEMENT
@@ -454,22 +384,3 @@ contract FlightSuretyApp {
 // endregion
 
 }   
-
-
-contract FlightSuretyData{
-    function isOperational() public view returns(bool);
-    //function setOperatingStatus(bool mode) external;
-    function isRegistered(address airline) external view returns(bool);
-    function canVote(address airline) external view returns(bool);
-    //function RegisteredAirlinesCount() external view returns(uint);
-    function registerAirline(address airline) external;
-    //function enableVoting() external payable;
-    function buy(address customer, bytes32 flight, uint amount) external payable;
-    //function viewInsuredFlights(address customer) external returns(bytes32[] memory insuredFlights);
-    function creditInsurees(bytes32, address) external view returns(uint credit);
-    function getCredit(address)external view returns(uint credit);
-    function pay(address) public;
-    function fund(address, bytes32) public payable;
-    function getFlightKey(address airline, string memory flight, uint256 timestamp) internal pure returns(bytes32);
-    function() external payable;
-}

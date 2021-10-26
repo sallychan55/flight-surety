@@ -71,12 +71,6 @@ contract FlightSuretyData {
         _;
     }
 
-    modifier requireAuthorizedCaller()
-    {
-        require(authorizedCallers[msg.sender], "Caller is not authorized");
-        _;  // All modifiers require an "_" which indicates where the function body will be added
-    }
-
     /********************************************************************************************/
     /*                                       UTILITY FUNCTIONS                                  */
     /********************************************************************************************/
@@ -92,20 +86,6 @@ contract FlightSuretyData {
                             returns(bool) 
     {
         return operational;
-    }
-
-    function isAirline
-                    (
-                        address airline        
-                    ) 
-                            public 
-                            view 
-                            returns(bool) 
-    {
-        if(airlines[airline].isRegistered && airlines[airline].isFunded)
-            return true;
-
-        return false;
     }
 
 
@@ -124,22 +104,6 @@ contract FlightSuretyData {
         operational = mode;
     }
 
-    /**
-    * @dev Set which app contracts can access this data contract
-    *
-    *  Used to authorize a FlightSuretyApp contract to interact with FlightSuretyData.
-    */
-    function authorizeCaller
-                            (
-                                address appContract
-                            )
-                            external
-                            requireContractOwner
-                            requireIsOperational
-    {
-        authorizedCallers[appContract] = true;
-    }
-
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
@@ -150,44 +114,25 @@ contract FlightSuretyData {
     *
     */   
     function registerAirline
-                            (
-                                address airline   
+                            (   
                             )
                             external
-                            requireIsOperational
+                            pure
     {
-        airlines[airline].isRegistered = true;
-
-        if(airlines[airline].balance >= 10 ether){
-            airlines[airline].isFunded = true;
-        }
-
-        airlinesCount++;        
     }
 
-    struct insuredFlights{
-        mapping(bytes32 => uint) insuranceDetails; //stores how much did the customer insure for each flight
-    }
-
-    mapping(address => insuredFlights) allInsuredFlights;
-    mapping(address => uint) payouts; //Amounts owed to insurees but have not yet been credited to their accounts
 
    /**
     * @dev Buy insurance for a flight
     *
     */   
     function buy
-                            (
-                                address customer,
-                                bytes32 flight,
-                                uint amount                             
+                            (                             
                             )
                             external
                             payable
-                            requireIsOperational
     {
-        require(allInsuredFlights[customer].insuranceDetails[flight] == 0, 'This flight is already insured by this customer');
-        allInsuredFlights[customer].insuranceDetails[flight] = amount;        
+
     }
 
     /**
@@ -195,37 +140,12 @@ contract FlightSuretyData {
     */
     function creditInsurees
                                 (
-                                    bytes32 flight,
-                                    address insuree
                                 )
                                 external
-                                requireIsOperational
-                                returns(uint credit)
+                                pure
     {
-        credit = allInsuredFlights[insuree].insuranceDetails[flight];
-        require(credit > 0,
-                'You either did not insure this flight from before, or you have already claimed the credit for this flight.');
-
-        allInsuredFlights[insuree].insuranceDetails[flight] = 0;
-        credit = credit.mul(3);
-        credit = credit.div(2);
-        require(allInsuredFlights[insuree].insuranceDetails[flight] == 0, 'Could not payout your credit');
-
-        payouts[insuree] = payouts[insuree].add(credit);
-        require(payouts[insuree] > 0, 'Unable to add your credit to the payout system');        
     }
     
-    function getCredit
-                        (
-                            address insuree
-                        )
-                        external
-                        view
-                        returns(uint credit)
-    {
-        credit = payouts[insuree];
-        return credit;
-    }
 
     /**
      *  @dev Transfers eligible payout funds to insuree
@@ -233,19 +153,10 @@ contract FlightSuretyData {
     */
     function pay
                             (
-                                address insuree
                             )
                             external
-                            requireIsOperational
+                            pure
     {
-        uint credit = payouts[insuree];
-        //1. Checks
-        require(credit > 0, 'User does not have credit to withraw');
-        //2. Effects
-        payouts[insuree] = 0; //reset credit to prevent multiple withrawal of the same credit
-        require(payouts[insuree] == 0, 'Could not withdraw credit');
-        //3. Interaction
-        insuree.transfer(credit); // msg.sender        
     }
 
    /**
@@ -258,10 +169,7 @@ contract FlightSuretyData {
                             )
                             public
                             payable
-                            requireIsOperational
     {
-        //require(allInsuredFlights[msg.sender].insuranceDetails[flight] == 0, 'This flight is already insured by this customer');
-        //allInsuredFlights[msg.sender].insuranceDetails[flight] = msg.value;        
     }
 
     function getFlightKey

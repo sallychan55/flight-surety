@@ -94,20 +94,6 @@ contract FlightSuretyData {
         return operational;
     }
 
-    function isAirline
-                    (
-                        address airline        
-                    ) 
-                            public 
-                            view 
-                            returns(bool) 
-    {
-        if(airlines[airline].isRegistered && airlines[airline].isFunded)
-            return true;
-
-        return false;
-    }
-
 
     /**
     * @dev Sets contract operations on/off
@@ -122,22 +108,6 @@ contract FlightSuretyData {
                             requireContractOwner 
     {
         operational = mode;
-    }
-
-    /**
-    * @dev Set which app contracts can access this data contract
-    *
-    *  Used to authorize a FlightSuretyApp contract to interact with FlightSuretyData.
-    */
-    function authorizeCaller
-                            (
-                                address appContract
-                            )
-                            external
-                            requireContractOwner
-                            requireIsOperational
-    {
-        authorizedCallers[appContract] = true;
     }
 
     /********************************************************************************************/
@@ -187,7 +157,8 @@ contract FlightSuretyData {
                             requireIsOperational
     {
         require(allInsuredFlights[customer].insuranceDetails[flight] == 0, 'This flight is already insured by this customer');
-        allInsuredFlights[customer].insuranceDetails[flight] = amount;        
+        allInsuredFlights[customer].insuranceDetails[flight] = amount;
+        allInsuredFlights[customer].insuranceKeys.push(flight);        
     }
 
     /**

@@ -252,13 +252,7 @@ contract FlightSuretyApp {
         require(flights[flight].statusCode != STATUS_CODE_UNKNOWN, 'Flight status unknown, submit request to fetch it from oracles');
         require(flights[flight].statusCode == STATUS_CODE_LATE_AIRLINE, 'Flight status does not imply insurance refunding');
 
-        string memory _flight = flight;
-        bytes32 flight_byte;
-        assembly {
-            flight_byte := mload(add(_flight, 32)) //convert flight name from string to bytes32
-        }
-
-        flightSuretyData.creditInsurees(flight_byte, msg.sender);
+        flightSuretyData.creditInsurees(flight, msg.sender);
 }
 
     function getCredit
