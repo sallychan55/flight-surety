@@ -7,6 +7,12 @@
     <title>FlightSurety</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <script>
+        function show_value(x)
+        {
+        document.getElementById("slider_value").innerHTML="You will pay: " + x +" Ether for insuring your flight.";
+        }
+    </script>
 </head>
 
 <body>
@@ -23,9 +29,74 @@
 
         <div id="display-wrapper" class="top-20">
         </div>
+        
+        <h2>Register Flight:</h2>
         <div class="row top-20">
-            <label class="form">Flight</label> <input type="text" id="flight-number"> <btn class="btn btn-primary" id="submit-oracle">Submit to Oracles</btn>
+            <label class="form">Flight</label> 
+            <input type="text" id="new-flight">
+            <btn class="btn btn-primary" id="register-flight">Register</btn>
         </div>
+        <hr>
+
+        <h2>Fund Airline:</h2>
+        <div class="form-group top-20">
+          <label>Fund</label>
+          <div class="input-group mb-2">
+              <div class="input-group-prepend">
+                  <div class="input-group-text">ETH</div>
+              </div>
+              <input type="text" class="form-control" id="funds" placeholder="Needs 10 to be operational.">
+              <button type="submit" class="btn btn-primary" id="fund">Fund</button>
+          </div>
+        </div>
+        <hr>
+
+        <h2>Buy Insurance:</h2>
+        <div class="row top-20">
+            <label class="form">Flight</label> 
+            <select id = "flight-number">
+                <option value = "ANA 1001">ANA 1001</option>
+                <option value = "ANA 1002">ANA 1002</option>
+                <option value = "JAL 2001">JAL 2001</option>
+                <option value = "JAL 2002">JAL 2002</option>
+            </select>
+        </div>
+        <div>
+            <span id="slider_value" style="color:red;"></span>
+        </br>
+        0<input width="400" id="insurance-value" type="range" min="0" max="1" step="any" name="sld3" value="0.5" onchange="show_value(this.value);">1Ether
+        <btn class="btn btn-primary" id="buy-insurance">Buy Insurance</btn>
+        </div>
+        
+        <hr>
+
+        <h2>Fetch Flight Status:</h2>
+        <div class="row top-20">
+            <label class="form">Flight</label> 
+            <select id = "flight-number-oracles">
+                <option value = "ANA 1001">ANA 1001</option>
+                <option value = "ANA 1002">ANA 1002</option>
+                <option value = "JAL 2001">JAL 2001</option>
+                <option value = "JAL 2002">JAL 2002</option>
+            </select>
+            <btn class="btn btn-primary" id="submit-oracle">Submit to Oracles</btn>
+        </div>
+
+        <hr>
+
+        <h2>Claim Your Insurance Amount:</h2>
+        <div class="row top-20">
+            <label class="form">Flight</label> 
+            <select id = "flight-number-claim">
+                <option value = "ANA 1001">ANA 1001</option>
+                <option value = "ANA 1002">ANA 1002</option>
+                <option value = "JAL 2001">JAL 2001</option>
+                <option value = "JAL 2002">JAL 2002</option>
+            </select>
+            <btn class="btn btn-primary" id="claim-insurance">Claim Insurance</btn>
+            <btn class="btn btn-primary" id="withdraw-credit">Withdraw Now</btn>
+        </div>        
+        
     </main>
 
 </body>

@@ -50,3 +50,10 @@ Deploy the contents of the ./dapp folder
 * [Solidity Language Reference](http://solidity.readthedocs.io/en/v0.4.24/)
 * [Ethereum Blockchain Explorer](https://etherscan.io/)
 * [Web3Js Reference](https://github.com/ethereum/wiki/wiki/JavaScript-API)
+
+## Dependencies
+* Truffle: v5.0.2
+* Truffle Wallet Provider: 1.0.2
+* Solidity: 0.4.24 
+* Node: v16.10.0
+* Web3: 1.0.0-beta.37

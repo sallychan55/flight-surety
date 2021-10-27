@@ -25,6 +25,8 @@ contract FlightSuretyApp {
     uint8 private constant STATUS_CODE_LATE_TECHNICAL = 40;
     uint8 private constant STATUS_CODE_LATE_OTHER = 50;
 
+    uint8 private constant CONSENSUS_THRESHOLD = 4;
+
     address private contractOwner;          // Account used to deploy contract
 
     bool private operational = true;
@@ -122,38 +124,31 @@ contract FlightSuretyApp {
     {
         require(flightSuretyData.isRegistered(airline) == false, "This airline is already registered.");
 
-        if(numOfRegisteredAlirlines < 4) //Multi-party Consensus does not apply yet
-        {
+        /*  
+            Multiparty Consensus:
+            Only existing airline may register a new airline until there are at least four airlines registered.
+            Registration of fifth and subsequent airlines requires multi-party consensus of 50% of registered airlines.
+         */
+        if(numOfRegisteredAlirlines < CONSENSUS_THRESHOLD){
             flightSuretyData.registerAirline(airline);
             success = true;
             votes = 0;
-        }
-        //Otherwise (M>=4), apply multisig:
-        //require(flightSuretyData.canVote(msg.sender), "Message sender is not authorized to register a new airline.");
-        else{
+        } else {
             bool isDuplicate = false;
-
-            for(uint c = 0; c < multiCallsReg.length; c++)
-            {
-                if(multiCallsReg[c] == msg.sender)
-                {
+            for(uint c = 0; c < multiCallsReg.length; c++){
+                if(multiCallsReg[c] == msg.sender){
                     isDuplicate = true;
                     break;
                 }
             }
 
             require(!isDuplicate, "Caller already voted on adding this flight");
-
             multiCallsReg.push(msg.sender);
-
             votes = multiCallsReg.length;
-
-            if(votes >= M)      //Voting threshold reached -> Register the airline
-            {
+            if(votes >= M){
                 flightSuretyData.registerAirline(airline);
-                multiCallsReg = new address[](0);      //Reset list of voters
+                multiCallsReg = new address[](0);
                 success = true;
-                //Update M to be 50% of registered airlines
                 M = numOfRegisteredAlirlines;
                 M = M.div(2);
             }
@@ -186,13 +181,12 @@ contract FlightSuretyApp {
     */  
     function processFlightStatus
                                 (
-                                    address airline,
                                     string memory flight,
                                     uint256 timestamp,
                                     uint8 statusCode
                                 )
                                 internal
-                                view
+                                //view
                                 requireIsOperational()
     {
         flights[flight].statusCode = statusCode;
@@ -236,7 +230,12 @@ contract FlightSuretyApp {
         require(flights[flight].isRegistered, 'This flight is not registered for insurance');
         require(msg.value <= 1 ether && msg.value > 0, 'You must pay an insurance amount up to 1 ether.');
 
-        //flightSuretyData.fund.value(msg.value)(msg.sender, flight);
+        string memory _flight = flight;
+        bytes32 flight_byte;
+        assembly {
+            flight_byte := mload(add(_flight, 32)) 
+        }
+        flightSuretyData.buy(msg.sender, flight_byte, msg.value);        
     }
 
     event  payout(uint amount, address insuree);
@@ -246,20 +245,20 @@ contract FlightSuretyApp {
                                 string flight
                             )
                             external
+                            payable
+                            requireIsOperational()
     {
         require(flights[flight].isRegistered, 'This flight is not registered for insurance');
-
         require(flights[flight].statusCode != STATUS_CODE_UNKNOWN, 'Flight status unknown, submit request to fetch it from oracles');
         require(flights[flight].statusCode == STATUS_CODE_LATE_AIRLINE, 'Flight status does not imply insurance refunding');
 
         string memory _flight = flight;
         bytes32 flight_byte;
         assembly {
-            flight_byte := mload(add(_flight, 32)) //convert flight name from string to bytes32
+            flight_byte := mload(add(_flight, 32)) 
         }
-
         flightSuretyData.creditInsurees(flight_byte, msg.sender);
-}
+    }
 
     function getCredit
                         (
@@ -269,7 +268,7 @@ contract FlightSuretyApp {
                         view
                         returns(uint credit)
     {
-        credit = flightSuretyData.getCredit(msg.sender);
+        return flightSuretyData.getCredit(msg.sender);
     }
 
     function withdrawCredit
@@ -279,6 +278,7 @@ contract FlightSuretyApp {
                             payable
     {
         flightSuretyData.pay(msg.sender);
+        msg.sender.transfer(msg.value);
     }
 
 
@@ -389,7 +389,7 @@ contract FlightSuretyApp {
             emit FlightStatusInfo(airline, flight, timestamp, statusCode);
 
             // Handle flight status as appropriate
-            processFlightStatus(airline, flight, timestamp, statusCode);
+            processFlightStatus(flight, timestamp, statusCode);
         }
     }
 

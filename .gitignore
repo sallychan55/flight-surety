@@ -64,3 +64,6 @@ typings/
 .env
 
 ~$*.pptx
+
+.history
+.DS_Store
